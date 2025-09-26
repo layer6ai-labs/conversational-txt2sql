@@ -2,7 +2,7 @@
 
 # Project settings
 project:
-  name: "bird-interact-agentic"
+  name: "bird-interact"
   version: "1.0.0"
   root_path: "/path/to/your/project"  # Replace with actual path
   experiment_id: null  # Auto-generated if not provided
@@ -55,7 +55,7 @@ data:
     external_kb_template: "bird_interact_conv/data/bird-interact-lite/[[DB_name]]/[[DB_name]]_kb.jsonl"
     
   output:
-    base_dir: "bird_interact_conv/results"
+    base_dir: "results"
     # Results will be organized as: base_dir/patience_{patience}/{model_name}/
     
   file_patterns:

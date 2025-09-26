@@ -1,38 +1,48 @@
 import argparse
 import yaml
 import logging
+from pathlib import Path
 
-from config.main_config import AppConfig # Using Pydantic for config validation
+# Import the Pydantic model for config validation and the main orchestrator
+from models.config import AppConfig
+from pipeline.main_pipeline import AgenticPipeline
 from utils.logging_config import setup_logging
-from pipeline.main_pipeline import AgenticPipeline # This orchestrates the phases
 
-setup_logging()
-logger = logging.getLogger(__name__)
+# Dynamically determine the project root directory
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 def main():
     parser = argparse.ArgumentParser(description="Run the BIRD-Interact Agentic Pipeline.")
-    parser.add_argument("--config", type=str, default="config/main_config.yaml",
-                        help="Path to the configuration YAML file.")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="config/main_config.yaml",
+        help="Path to the configuration YAML file (relative to project root)."
+    )
     args = parser.parse_args()
 
+    config_path = PROJECT_ROOT / args.config
+    
     try:
-        with open(args.config, 'r') as f:
+        # Load and validate the configuration
+        with open(config_path, 'r') as f:
             raw_config = yaml.safe_load(f)
-        config = AppConfig(**raw_config) # Validate config with Pydantic
+        config = AppConfig(**raw_config)
 
-        logger.info(f"Starting BIRD-Interact Pipeline with config: {config.model_dump_json(indent=2)}")
+        # Set up logging using the configuration
+        setup_logging(config.logging)
+        logger = logging.getLogger(__name__)
+        logger.info("Configuration loaded and validated successfully.")
+        
+        # Initialize and run the pipeline
+        pipeline = AgenticPipeline(config, PROJECT_ROOT)
+        pipeline.run()
 
-        pipeline = AgenticPipeline(config)
-        pipeline.run_ambiguity_resolution()
-        pipeline.run_phase1_debugging()
-        pipeline.run_follow_up_question()
-        pipeline.run_phase2_debugging()
-
-        logger.info("Pipeline execution completed.")
+        logger.info("Pipeline execution has finished.")
 
     except Exception as e:
-        logger.exception(f"An error occurred during pipeline execution: {e}")
-        # Optionally, clean up or trigger alerts
+        logging.basicConfig() # Basic logging if config fails
+        logging.exception(f"A critical error occurred: {e}")
 
 if __name__ == "__main__":
     main()
