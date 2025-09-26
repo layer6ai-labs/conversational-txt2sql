@@ -1,0 +1,15 @@
+[project]
+name = "conversational-txt2sql"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "multilayer", email = "ayqchen0102@gmail.com"},
+]
+dependencies = ["pydantic>=2.11.9"]
+requires-python = ">=3.9.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
