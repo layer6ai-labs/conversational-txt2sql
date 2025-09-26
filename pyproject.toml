@@ -5,8 +5,17 @@ description = "Default template for PDM package"
 authors = [
     {name = "multilayer", email = "ayqchen0102@gmail.com"},
 ]
-dependencies = ["pydantic>=2.11.9"]
-requires-python = ">=3.9.*"
+dependencies = [
+    "anthropic>=0.68.1",
+    "google>=3.0.0",
+    "google-cloud>=0.34.0",
+    "google-generativeai>=0.8.5",
+    "openai>=1.109.1",
+    "pydantic>=2.11.9",
+    "sqlglot>=27.19.0",
+    "tqdm>=4.67.1",
+]
+requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "MIT"}
 
