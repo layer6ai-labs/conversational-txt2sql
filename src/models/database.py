@@ -157,5 +157,9 @@ class Data(BaseModel):
     test_cases: list[str]
     high_level: bool
     category: str
+    conditions: Conditions
     output_type: Optional[str] = None  # sometimes missing
     amb_user_query: str
+    user_query_ambiguity: UserQueryAmbiguity
+    knowledge_ambiguity: list[KnowledgeAmbiguityItem]
+    follow_up: FollowUp
