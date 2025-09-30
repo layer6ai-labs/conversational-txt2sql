@@ -176,3 +176,6 @@ features:
   async_api_calls: true
   result_caching: true
   schema_validation: true
+
+credentials:
+  openai_api_key: "env:OPENAI_API_KEY"

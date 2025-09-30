@@ -12,6 +12,7 @@ dependencies = [
     "google-generativeai>=0.8.5",
     "openai>=1.109.1",
     "pydantic>=2.11.9",
+    "python-dotenv>=1.1.1",
     "sqlglot>=27.19.0",
     "tqdm>=4.67.1",
 ]

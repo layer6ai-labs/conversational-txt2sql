@@ -2,12 +2,12 @@ import argparse
 import yaml
 import logging
 from pathlib import Path
-
-# Import the Pydantic model for config validation and the main orchestrator
 from models.config import AppConfig
 from pipeline.main_pipeline import AgenticPipeline
 from utils.logging_config import setup_logging
+from dotenv import load_dotenv
 
+load_dotenv()
 # Dynamically determine the project root directory
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
