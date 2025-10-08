@@ -4,7 +4,7 @@ from prompt import generate_prompt
 def main():
     """Main function to run the text-to-SQL evaluation pipeline."""
     # Step 1: Get the input question and database context
-    # question, db_context = `get_user_question_and_db_context()
+    # question, db = `get_user_question_and_db()
     question = "I need to find the top-performing income funds for a client. Could you please identify all the premium funds available? For each one, calculate its secure income efficiency score. Please show me the fund's ticker symbol, its name, and its score."
     db = "exchange_traded_funds"
     # Step 2: Create a prompt for the LLM
