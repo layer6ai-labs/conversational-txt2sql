@@ -1,11 +1,16 @@
+from prompt import generate_prompt
+
 
 def main():
     """Main function to run the text-to-SQL evaluation pipeline."""
     # Step 1: Get the input question and database context
-    question, db_context = get_user_question_and_db_context()
-
+    # question, db_context = `get_user_question_and_db_context()
+    question = "I need to find the top-performing income funds for a client. Could you please identify all the premium funds available? For each one, calculate its secure income efficiency score. Please show me the fund's ticker symbol, its name, and its score."
+    db = "exchange_traded_funds"
     # Step 2: Create a prompt for the LLM
-    prompt = generate_text_to_sql_prompt(question, db_context)
+    prompt = generate_prompt(question, db)
+    print("Step 2: Generated Prompt:")
+    print(prompt)
 
     # Step 3: Get the response from the LLM
     llm_response = query_language_model(prompt)
@@ -15,11 +20,11 @@ def main():
 
     # Step 5: Execute the predicted SQL query to get its results
     print("Step 5a: Executing the predicted SQL query...")
-    predicted_results = execute_sql_query(predicted_sql_query, db_context)
+    predicted_results = execute_sql_query(predicted_sql_query, db)
 
     # Step 6: Get and execute the ground truth SQL query for comparison
-    ground_truth_query = get_ground_truth_query(db_context)
-    ground_truth_results = execute_sql_query(ground_truth_query, db_context)
+    ground_truth_query = get_ground_truth_query(question, db)
+    ground_truth_results = execute_sql_query(ground_truth_query, db)
 
     # Step 7: Compare the results and print the evaluation
     evaluation_outcome = evaluate_results(predicted_results, ground_truth_results)
