@@ -1,5 +1,6 @@
 from conversational_txt2sql.call_api import get_query_response
 from conversational_txt2sql.prompt import generate_prompt
+import re
 
 
 def get_user_input(prompt: str, default_value: str = "") -> str:
@@ -20,6 +21,23 @@ def get_user_input(prompt: str, default_value: str = "") -> str:
 
     user_input = input(display_prompt).strip()
     return user_input if user_input else default_value
+
+
+def extract_sql_from_response(response: str) -> str:
+    """
+    Extracts the SQL query from the LLM response between <SQL> and </SQL> tags.
+
+    Args:
+        response: The response string from the LLM.
+
+    Returns:
+        The extracted SQL query, stripped of leading/trailing whitespace.
+        Returns an empty string if no SQL tags are found.
+    """
+    match = re.search(r"<SQL>(.*?)</SQL>", response, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return ""
 
 
 def main():
@@ -45,19 +63,24 @@ def main():
     
     # Step 4: Extract the SQL query from the LLM's response
     predicted_sql_query = extract_sql_from_response(llm_response)
+    print("Step 4: Extracted SQL Query:")
+    print(predicted_sql_query)
+    if not predicted_sql_query:
+        print("No SQL query found in the LLM response.")
+        return
+    
+    # # Step 5: Execute the predicted SQL query to get its results
+    # print("Step 5a: Executing the predicted SQL query...")
+    # predicted_results = execute_sql_query(predicted_sql_query, db)
 
-    # Step 5: Execute the predicted SQL query to get its results
-    print("Step 5a: Executing the predicted SQL query...")
-    predicted_results = execute_sql_query(predicted_sql_query, db)
+    # # Step 6: Get and execute the ground truth SQL query for comparison
+    # ground_truth_query = get_ground_truth_query(question, db)
+    # ground_truth_results = execute_sql_query(ground_truth_query, db)
 
-    # Step 6: Get and execute the ground truth SQL query for comparison
-    ground_truth_query = get_ground_truth_query(question, db)
-    ground_truth_results = execute_sql_query(ground_truth_query, db)
-
-    # Step 7: Compare the results and print the evaluation
-    evaluation_outcome = evaluate_results(predicted_results, ground_truth_results)
-    print("\n--- FINAL RESULT ---")
-    print(evaluation_outcome)
+    # # Step 7: Compare the results and print the evaluation
+    # evaluation_outcome = evaluate_results(predicted_results, ground_truth_results)
+    # print("\n--- FINAL RESULT ---")
+    # print(evaluation_outcome)
 
 
 if __name__ == "__main__":
