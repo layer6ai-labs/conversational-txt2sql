@@ -1,4 +1,5 @@
-from prompt import generate_prompt
+from conversational_txt2sql.call_api import get_query_response
+from conversational_txt2sql.prompt import generate_prompt
 
 
 def main():
@@ -11,10 +12,11 @@ def main():
     prompt = generate_prompt(question, db)
     print("Step 2: Generated Prompt:")
     print(prompt)
+    prompt = "I need to find the top-performing income funds for a client. Could you please identify all the premium funds available? For each one, calculate its secure income efficiency score. Please show me the fund's ticker symbol, its name, and its score."
 
     # Step 3: Get the response from the LLM
-    llm_response = query_language_model(prompt)
-
+    llm_response = get_query_response(prompt=prompt, model_name="gpt-4.1-mini")
+    
     # Step 4: Extract the SQL query from the LLM's response
     predicted_sql_query = extract_sql_from_response(llm_response)
 

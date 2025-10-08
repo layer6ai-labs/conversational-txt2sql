@@ -1,25 +1,20 @@
 [project]
-name = "conversational-txt2sql"
+name = "conversational_txt2sql"
 version = "0.1.0"
-description = "Default template for PDM package"
-authors = [
-    {name = "multilayer", email = "ayqchen0102@gmail.com"},
-]
+description = "MultiModal AI Bootcamp"
+readme = "README.md"
+requires-python = ">=3.12"
 dependencies = [
-    "anthropic>=0.68.1",
-    "google>=3.0.0",
-    "google-cloud>=0.34.0",
-    "google-generativeai>=0.8.5",
     "openai>=1.109.1",
     "pydantic>=2.11.9",
     "python-dotenv>=1.1.1",
     "sqlglot>=27.19.0",
     "tqdm>=4.67.1",
 ]
-requires-python = ">=3.9"
-readme = "README.md"
-license = {text = "MIT"}
 
+[project.scripts]
+txt2sql_pipeline = "conversational_txt2sql.main_pipeline:main"
 
-[tool.pdm]
-distribution = false
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
