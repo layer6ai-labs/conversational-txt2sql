@@ -207,4 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 # results
-BIRD-Interact/bird_interact_conv/results
+BIRD_Interact/bird_interact_conv/results
+
+__MACOSX
