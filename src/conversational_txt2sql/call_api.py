@@ -8,8 +8,7 @@ and error handling with retry logic.
 
 import os
 import time
-from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass
+from typing import Any
 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -18,9 +17,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
 
-MODEL_CONFIG: Dict[str, Dict[str, str]] = {
+MODEL_CONFIG: dict[str, dict[str, str]] = {
     "gpt-4.1-mini": {
         "base_url": "https://api.openai.com/v1", 
         "api_key": OPENAI_API_KEY
@@ -28,19 +27,8 @@ MODEL_CONFIG: Dict[str, Dict[str, str]] = {
 }
 
 
-@dataclass
-class ModelParameters:
-    """Configuration parameters for language model requests."""
-    temperature: float = 0.0
-    max_tokens: int = 512
-    top_p: float = 1.0
-    frequency_penalty: float = 0.0
-    presence_penalty: float = 0.0
-    stop: Optional[Union[str, List[str]]] = None
-
-
 def api_request(
-    messages: List[Dict[str, str]], 
+    messages: list[dict[str, str]], 
     engine: str, 
     client: OpenAI, 
     backend: str = "openai", 
@@ -99,7 +87,7 @@ def get_query_response(
     top_p: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
-    stop: Optional[Union[str, List[str]]] = None,
+    stop: str |None |list[str] = None,
 ) -> str:
     """
     Set up the correct backend client and call the language model.
@@ -144,25 +132,15 @@ def get_query_response(
         backend = "openai"
     else:
         raise ValueError(f"Unsupported model: {model_name}")
-
-    # Prepare parameters
-    params = ModelParameters(
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=top_p,
-        frequency_penalty=frequency_penalty,
-        presence_penalty=presence_penalty,
-        stop=stop,
-    )
     
     # Convert dataclass to dict for kwargs
     kwargs = {
-        "temperature": params.temperature,
-        "max_tokens": params.max_tokens,
-        "top_p": params.top_p,
-        "frequency_penalty": params.frequency_penalty,
-        "presence_penalty": params.presence_penalty,
-        "stop": params.stop,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "top_p": top_p,
+        "frequency_penalty": frequency_penalty,
+        "presence_penalty": presence_penalty,
+        "stop": stop,
     }
     messages = [{"role": "user", "content": prompt}]
     return api_request(messages, engine, client, backend, **kwargs)
