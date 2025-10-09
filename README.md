@@ -24,6 +24,20 @@ conversational-txt2sql/
 ```
 
 ---
+# Add Environment variables
+
+To manage environment variables, create a file named `.env` in the project root directory. Add your API keys and configuration settings in this file. Example:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+DATABASE_URL=your_database_connection_string
+OTHER_ENV_VAR=your_value
+```
+
+**Note:**  
+- Never commit your `.env` file to version control.  
+- Update `.gitignore` to include `.env` if not already present.
+- Access these variables in your code using libraries like `python-dotenv`.
 
 ## File Descriptions
 
@@ -72,7 +86,7 @@ uv sync
 ### 2. Run the Streamlit UI
 
 ```bash
-streamlit run src/conversational_txt2sql/ui.py
+uv run streamlit run src/conversational_txt2sql/ui.py
 ```
 
 ### 3. Run the Main Pipeline (CLI)
