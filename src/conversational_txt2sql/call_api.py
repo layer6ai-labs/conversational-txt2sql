@@ -8,7 +8,7 @@ and error handling with retry logic.
 
 import os
 import time
-from typing import Any
+from typing import Any, Optional, Union
 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -16,8 +16,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Configuration
-OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
 
 MODEL_CONFIG: dict[str, dict[str, str]] = {
     "gpt-4.1-mini": {
@@ -32,24 +31,27 @@ def api_request(
     engine: str,
     client: OpenAI,
     backend: str = "openai",
+    mode: str = "chat",
+    text_format: Any = None,
     **kwargs: Any,
-) -> str:
+) -> Any:
     """
     Call the underlying LLM endpoint with retry logic.
 
     Args:
-        messages: List of message dictionaries with 'role' and 'content' keys
-        engine: The model engine/name to use
-        client: Initialized API client for the backend
-        backend: Backend type ('openai', 'anthropic', etc.)
-        **kwargs: Additional parameters passed to the API call
+        messages: List of message dicts with 'role' and 'content'
+        engine: Model engine/name
+        client: Initialized API client
+        backend: Backend type
+        mode: "chat" or "structured"
+        text_format: Pydantic model for structured output
+        **kwargs: Additional API params
 
     Returns:
-        The text response from the language model
+        Text response or structured output
 
     Raises:
-        ValueError: If the backend is not supported
-        RuntimeError: If all retry attempts fail
+        ValueError, RuntimeError
     """
     max_retries = 5
     retry_delay = 1
@@ -57,24 +59,35 @@ def api_request(
     for attempt in range(max_retries):
         try:
             if backend == "openai":
-                completion = client.chat.completions.create(
-                    model=engine,
-                    messages=messages,
-                    temperature=kwargs.get("temperature", 0.0),
-                    max_tokens=kwargs.get("max_tokens", 512),
-                    top_p=kwargs.get("top_p", 1.0),
-                    frequency_penalty=kwargs.get("frequency_penalty", 0.0),
-                    presence_penalty=kwargs.get("presence_penalty", 0.0),
-                    stop=kwargs.get("stop", None),
-                )
-                return completion.choices[0].message.content or ""
+                if mode == "chat":
+                    completion = client.chat.completions.create(
+                        model=engine,
+                        messages=messages,
+                        temperature=kwargs.get("temperature", 0.0),
+                        max_tokens=kwargs.get("max_tokens", 512),
+                        top_p=kwargs.get("top_p", 1.0),
+                        frequency_penalty=kwargs.get("frequency_penalty", 0.0),
+                        presence_penalty=kwargs.get("presence_penalty", 0.0),
+                        stop=kwargs.get("stop", None),
+                    )
+                    return completion.choices[0].message.content or ""
+                elif mode == "structured":
+                    if text_format is None:
+                        raise ValueError("`text_format` must be provided for structured mode")
+                    response = client.responses.parse(
+                        model=engine,
+                        input=messages,
+                        text_format=text_format,
+                    )
+                    return response.output_parsed
+                else:
+                    raise ValueError("mode must be 'chat' or 'structured'")
             else:
                 raise ValueError(f"Unsupported backend: {backend}")
-
         except Exception as e:
             print(f"API request failed (attempt {attempt + 1}/{max_retries}): {e}")
             if attempt < max_retries - 1:
-                time.sleep(retry_delay * (2**attempt))  # Exponential backoff
+                time.sleep(retry_delay * (2 ** attempt))
             else:
                 raise RuntimeError(f"All retry attempts failed. Last error: {e}")
 
@@ -87,60 +100,59 @@ def get_query_response(
     top_p: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
-    stop: str | None | list[str] = None,
-) -> str:
+    stop: Optional[Union[str, list[str]]] = None,
+    mode: str = "chat",
+    text_format: Any = None,
+) -> Any:
     """
     Set up the correct backend client and call the language model.
 
     Args:
-        prompt: The prompt to send to the language model
-        model_name: Name of the model to use (e.g., 'gpt-4.1-mini')
-        temperature: Controls randomness in generation (0.0 to 2.0)
-        max_tokens: Maximum number of tokens to generate
-        top_p: Nucleus sampling parameter (0.0 to 1.0)
-        frequency_penalty: Penalty for frequent tokens (-2.0 to 2.0)
-        presence_penalty: Penalty for new tokens (-2.0 to 2.0)
-        stop: Stop sequences to halt generation
+        prompt: Prompt to send
+        model_name: Model name (e.g., 'gpt-4.1-mini')
+        temperature, max_tokens, top_p, frequency_penalty, presence_penalty, stop: API params
+        mode: "chat" or "structured"
+        text_format: Pydantic model for structured output
 
     Returns:
-        The text response from the language model
+        Text response or structured output
 
     Raises:
-        ValueError: If the model is not supported or configuration is invalid
-        RuntimeError: If the API call fails after retries
+        ValueError, RuntimeError
     """
     if not prompt:
-        raise ValueError("Prompt cannot be empty")
+        raise ValueError("`prompt` cannot be empty")
+    if not model_name or "gpt" not in model_name.lower() or model_name not in MODEL_CONFIG:
+        raise ValueError(f"Model '{model_name}' not found or unsupported")
 
-    if not model_name:
-        raise ValueError("Prompt cannot be empty")
+    config = MODEL_CONFIG[model_name]
+    if not config["api_key"]:
+        raise ValueError(f"API key not configured for model '{model_name}'")
 
-    # Determine backend and set up client
-    if "gpt" in model_name.lower():
-        if model_name not in MODEL_CONFIG:
-            raise ValueError(f"Model '{model_name}' not found in configuration")
-
-        config = MODEL_CONFIG[model_name]
-        if not config["api_key"]:
-            raise ValueError(f"API key not configured for model '{model_name}'")
-
-        engine = model_name
-        client = OpenAI(
-            base_url=config["base_url"],
-            api_key=config["api_key"],
-        )
-        backend = "openai"
-    else:
-        raise ValueError(f"Unsupported model: {model_name}")
-
-    # Convert dataclass to dict for kwargs
-    kwargs = {
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "top_p": top_p,
-        "frequency_penalty": frequency_penalty,
-        "presence_penalty": presence_penalty,
-        "stop": stop,
-    }
+    engine = model_name
+    client = OpenAI(
+        base_url=config["base_url"],
+        api_key=config["api_key"],
+    )
+    backend = "openai"
     messages = [{"role": "user", "content": prompt}]
-    return api_request(messages, engine, client, backend, **kwargs)
+
+    if mode not in ("chat", "structured"):
+        raise ValueError("mode must be 'chat' or 'structured'")
+
+    return api_request(
+        messages=messages,
+        engine=engine,
+        client=client,
+        backend=backend,
+        mode=mode,
+        text_format=text_format,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        top_p=top_p,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty,
+        stop=stop,
+    )
+        
+

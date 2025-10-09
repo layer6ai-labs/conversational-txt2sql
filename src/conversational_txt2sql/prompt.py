@@ -27,8 +27,18 @@ SQL Query:
 """
 
 
-def generate_prompt(DATASET_PATH, question, db):
-    """Generate a prompt for the LLM based on the question and database context."""
+def generate_prompt(DATASET_PATH: str, question: str, db: str) -> str:
+    """
+    Generate a prompt for the LLM based on the question and database context.
+
+    Args:
+        DATASET_PATH: Path to the dataset directory
+        question: User's question
+        db: Database name
+
+    Returns:
+        Formatted prompt string
+    """
     with open(os.path.join(DATASET_PATH, db, f"{db}_schema.txt"), "r") as file:
         db_schema = file.read()
 

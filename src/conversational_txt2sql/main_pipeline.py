@@ -1,5 +1,6 @@
 from conversational_txt2sql.call_api import get_query_response
 from conversational_txt2sql.prompt import generate_prompt
+from conversational_txt2sql.evaluation import llm_judge
 import re
 
 
@@ -77,7 +78,11 @@ def main():
     # ground_truth_query = get_ground_truth_query(question, db)
     # ground_truth_results = execute_sql_query(ground_truth_query, db)
 
-    # # Step 7: Compare the results and print the evaluation
+    # # Step 7: Compare the queries: Generated SQL and Ground Truth SQL
+    
+    # comparison = llm_judge(predicted_sql_query, ground_truth_query)
+
+    # # Step 8: Compare the results and print the evaluation
     # evaluation_outcome = evaluate_results(predicted_results, ground_truth_results)
     # print("\n--- FINAL RESULT ---")
     # print(evaluation_outcome)
