@@ -61,7 +61,7 @@ def main():
     llm_response = get_query_response(prompt=prompt, model_name="gpt-4.1-mini")
     print("Step 3: LLM Response:")
     print(llm_response)
-    
+
     # Step 4: Extract the SQL query from the LLM's response
     predicted_sql_query = extract_sql_from_response(llm_response)
     print("Step 4: Extracted SQL Query:")
@@ -69,7 +69,7 @@ def main():
     if not predicted_sql_query:
         print("No SQL query found in the LLM response.")
         return
-    
+
     # # Step 5: Execute the predicted SQL query to get its results
     # print("Step 5a: Executing the predicted SQL query...")
     # predicted_results = execute_sql_query(predicted_sql_query, db)
@@ -79,7 +79,7 @@ def main():
     # ground_truth_results = execute_sql_query(ground_truth_query, db)
 
     # # Step 7: Compare the queries: Generated SQL and Ground Truth SQL
-    
+
     # comparison = llm_judge(predicted_sql_query, ground_truth_query)
 
     # # Step 8: Compare the results and print the evaluation

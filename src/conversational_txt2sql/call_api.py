@@ -73,7 +73,9 @@ def api_request(
                     return completion.choices[0].message.content or ""
                 elif mode == "structured":
                     if text_format is None:
-                        raise ValueError("`text_format` must be provided for structured mode")
+                        raise ValueError(
+                            "`text_format` must be provided for structured mode"
+                        )
                     response = client.responses.parse(
                         model=engine,
                         input=messages,
@@ -87,7 +89,7 @@ def api_request(
         except Exception as e:
             print(f"API request failed (attempt {attempt + 1}/{max_retries}): {e}")
             if attempt < max_retries - 1:
-                time.sleep(retry_delay * (2 ** attempt))
+                time.sleep(retry_delay * (2**attempt))
             else:
                 raise RuntimeError(f"All retry attempts failed. Last error: {e}")
 
@@ -122,7 +124,11 @@ def get_query_response(
     """
     if not prompt:
         raise ValueError("`prompt` cannot be empty")
-    if not model_name or "gpt" not in model_name.lower() or model_name not in MODEL_CONFIG:
+    if (
+        not model_name
+        or "gpt" not in model_name.lower()
+        or model_name not in MODEL_CONFIG
+    ):
         raise ValueError(f"Model '{model_name}' not found or unsupported")
 
     config = MODEL_CONFIG[model_name]
@@ -154,5 +160,3 @@ def get_query_response(
         presence_penalty=presence_penalty,
         stop=stop,
     )
-        
-
