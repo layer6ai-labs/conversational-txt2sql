@@ -1,3 +1,8 @@
+"""
+Structured Output reference :
+https://platform.openai.com/docs/guides/structured-outputs?example=chain-of-thought
+"""
+
 # %%
 from conversational_txt2sql.call_api import get_query_response
 from pydantic import BaseModel
