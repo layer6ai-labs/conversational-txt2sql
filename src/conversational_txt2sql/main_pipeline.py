@@ -9,6 +9,7 @@ import os
 # DUMP_FOLDER = "data/bird-interact-full-dumps"
 DATASET_PATH = "data/table_schema_info"
 
+
 def get_user_input(prompt: str, default_value: str = "") -> str:
     """
     Get user input with a default value.
@@ -65,7 +66,7 @@ def main():
     llm_response = get_query_response(prompt=prompt, model_name="gpt-4.1-mini")
     print("Step 3: LLM Response:")
     print(llm_response)
-    
+
     # NOT REQUIRED: Because we are doing this on initialization of postgres container
     # initialize_database(DUMP_FOLDER, db)
 

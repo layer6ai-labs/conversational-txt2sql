@@ -3,6 +3,13 @@ from conversational_txt2sql.main_pipeline import extract_sql_from_response
 from conversational_txt2sql.prompt import generate_prompt
 from conversational_txt2sql.call_api import get_query_response
 import time
+from conversational_txt2sql import get_config
+import pandas as pd
+from conversational_txt2sql.database_utils import execute_sql_query
+
+CONFIGS = get_config()
+DEFAULT_DB_CONFIG = CONFIGS["DEFAULT_DB_CONFIG"]
+DATASET_PATH = CONFIGS["DATASET_PATH"]
 
 
 def main():
@@ -51,7 +58,6 @@ def main():
     db = st.selectbox("Enter Database name:", db_options)
 
     if st.button("Generate SQL Query"):
-        DATASET_PATH = "data/"
         prompt = generate_prompt(DATASET_PATH, question, db)
         # Fancy spinner while processing
         with st.spinner(
@@ -68,6 +74,14 @@ def main():
                 f'<div style="color:white;font-size:1.1em;font-weight:bold;">⏱️ Response time: {elapsed:.2f} seconds</div>',
                 unsafe_allow_html=True,
             )
+            # QUERY the database and show results as DataFrame
+            with st.spinner("Running query on database..."):
+                results = execute_sql_query(sql_query, db, db_config=DEFAULT_DB_CONFIG)
+                if not results.empty:
+                    st.markdown("#### SQL Query Results")
+                    st.dataframe(results)
+                else:
+                    st.warning("No results returned or query failed.")
         else:
             st.error("No SQL query found in the LLM response.")
             st.markdown(

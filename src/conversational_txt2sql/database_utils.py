@@ -4,7 +4,8 @@ import os
 import glob
 from conversational_txt2sql import get_config
 
-DEFAULT_DB_CONFIG = get_config()['DEFAULT_DB_CONFIG']
+DEFAULT_DB_CONFIG = get_config()["DEFAULT_DB_CONFIG"]
+
 
 def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
     """
@@ -23,7 +24,7 @@ def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
 
     # Add the database name to the connection parameters
     conn_params = {
-        "dbname": f"{db_name}_template",  
+        "dbname": f"{db_name}_template",
         "user": db_config["user"],
         "password": db_config["password"],
         "host": db_config["host"],
@@ -40,13 +41,13 @@ def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
 
         # Fetch all results
         result = cursor.fetchall()
-        
+
         # Fetch Column names
         colnames = [desc[0] for desc in cursor.description]
-        
+
         # Create a dataframe
         df = pd.DataFrame(result, columns=colnames)
-        
+
         # Close the cursor and connection
         cursor.close()
         conn.close()
@@ -95,7 +96,7 @@ def initialize_database(dump_folder, db_name, db_config=None):
         # Execute each .sql file
         for sql_file in sql_files:
             print(f"Loading {sql_file} into database {db_name}...")
-            with open(sql_file, 'r') as file:
+            with open(sql_file, "r") as file:
                 sql_commands = file.read()
                 cursor.execute(sql_commands)
                 conn.commit()
