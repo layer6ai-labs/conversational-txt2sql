@@ -17,20 +17,35 @@ def main():
     st.markdown(
         """
         <style>
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+        body, .stApp {
+            background: #247D24 !important;
         }
-        .stApp {
-            background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%);
+        .logo-container {
+            position: fixed;
+            top: 100px;
+            left: 22px;
+            z-index: 9999;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 8px #3c763d20;
+            padding: 8px 14px 8px 8px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+        }
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
         .fancy-title {
             font-size: 2.8em;
             font-weight: bold;
             text-align: center;
             margin-bottom: 0.2em;
-            color: #2d3e50;
-            text-shadow: 2px 2px 8px #fff, 0 0 2px #66a6ff;
+            color: #94C29F;
+            
         }
         .sql-output {
             background: #fff;
@@ -42,6 +57,11 @@ def main():
             margin-top: 1em;
         }
         </style>
+        </div>
+        </div>
+        <div class="logo-container">
+            <img src="https://www.bing.com/th/id/OIP.aiBQQPej85d133DWLzJcpwHaEK?w=327&h=211&c=8&rs=1&qlt=90&o=6&cb=12&dpr=1.3&pid=3.1&rm=2" class="logo-img" alt="TD Logo">
+        </div>
         """,
         unsafe_allow_html=True,
     )
