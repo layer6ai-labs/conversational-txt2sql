@@ -24,6 +24,9 @@ build-backend = "uv_build"
 dev = [
     "ipykernel>=6.30.1",
 ]
+postgres = [
+    "psycopg2-binary>=2.9.10",
+]
 ui = [
     "streamlit>=1.50.0",
 ]

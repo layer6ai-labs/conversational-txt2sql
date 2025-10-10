@@ -3,6 +3,13 @@ from conversational_txt2sql.main_pipeline import extract_sql_from_response
 from conversational_txt2sql.prompt import generate_prompt
 from conversational_txt2sql.call_api import get_query_response
 import time
+from conversational_txt2sql import get_config
+import pandas as pd
+from conversational_txt2sql.database_utils import execute_sql_query
+
+CONFIGS = get_config()
+DEFAULT_DB_CONFIG = CONFIGS["DEFAULT_DB_CONFIG"]
+DATASET_PATH = CONFIGS["DATASET_PATH"]
 
 
 def main():
@@ -10,20 +17,35 @@ def main():
     st.markdown(
         """
         <style>
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+        body, .stApp {
+            background: #247D24 !important;
         }
-        .stApp {
-            background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%);
+        .logo-container {
+            position: fixed;
+            top: 100px;
+            left: 22px;
+            z-index: 9999;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 8px #3c763d20;
+            padding: 8px 14px 8px 8px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+        }
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
         .fancy-title {
             font-size: 2.8em;
             font-weight: bold;
             text-align: center;
             margin-bottom: 0.2em;
-            color: #2d3e50;
-            text-shadow: 2px 2px 8px #fff, 0 0 2px #66a6ff;
+            color: #94C29F;
+            
         }
         .sql-output {
             background: #fff;
@@ -35,6 +57,11 @@ def main():
             margin-top: 1em;
         }
         </style>
+        </div>
+        </div>
+        <div class="logo-container">
+            <img src="https://www.bing.com/th/id/OIP.aiBQQPej85d133DWLzJcpwHaEK?w=327&h=211&c=8&rs=1&qlt=90&o=6&cb=12&dpr=1.3&pid=3.1&rm=2" class="logo-img" alt="TD Logo">
+        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -51,7 +78,6 @@ def main():
     db = st.selectbox("Enter Database name:", db_options)
 
     if st.button("Generate SQL Query"):
-        DATASET_PATH = "data/"
         prompt = generate_prompt(DATASET_PATH, question, db)
         # Fancy spinner while processing
         with st.spinner(
@@ -68,6 +94,14 @@ def main():
                 f'<div style="color:white;font-size:1.1em;font-weight:bold;">⏱️ Response time: {elapsed:.2f} seconds</div>',
                 unsafe_allow_html=True,
             )
+            # QUERY the database and show results as DataFrame
+            with st.spinner("Running query on database..."):
+                results = execute_sql_query(sql_query, db, db_config=DEFAULT_DB_CONFIG)
+                if not results.empty:
+                    st.markdown("#### SQL Query Results")
+                    st.dataframe(results)
+                else:
+                    st.warning("No results returned or query failed.")
         else:
             st.error("No SQL query found in the LLM response.")
             st.markdown(

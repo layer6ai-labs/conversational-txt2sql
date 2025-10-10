@@ -5,6 +5,8 @@ src/data/*
 src/results/*
 .env
 .DS_Store
+__pycache__/
+__MACOSX/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
