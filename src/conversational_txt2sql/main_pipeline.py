@@ -1,7 +1,7 @@
 from conversational_txt2sql.call_api import get_query_response
 from conversational_txt2sql.prompt import generate_prompt
 from conversational_txt2sql.evaluation import llm_judge
-from conversational_txt2sql.utils import execute_sql_query, initialize_database
+from conversational_txt2sql.database_utils import execute_sql_query, initialize_database
 import re
 import os
 
