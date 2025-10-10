@@ -41,6 +41,33 @@ OTHER_ENV_VAR=your_value
 
 ----
 
+# Install Dependencies
+
+Install all dependencies (including UI) using [uv](https://github.com/astral-sh/uv):
+
+```bash
+uv sync --all-groups
+```
+
+## 2. Run the Streamlit UI
+
+```bash
+uv run streamlit run src/conversational_txt2sql/ui.py
+```
+
+## 3. Run the Main Pipeline (CLI)
+
+```bash
+uv run txt2sql_pipeline
+```
+
+## 4. Project Scripts
+
+You can also run scripts defined in `pyproject.toml` using `uv run <script_name>`, but for Streamlit apps, always use `streamlit run`.
+
+
+----
+
 # 🐘 Setting Up PostgreSQL with Docker
 
 To quickly get started with a local PostgreSQL database (matching the expected configuration for this project), we recommend using Docker Compose.
@@ -103,7 +130,6 @@ The code above will print all public tables in your PostgreSQL instance, confirm
 ---
 
 
-
 # File Descriptions
 
 - **data/**  
@@ -121,6 +147,9 @@ The code above will print all public tables in your PostgreSQL instance, confirm
 - **src/conversational_txt2sql/prompt.py**  
   Generates a detailed prompt for the LLM using the question, database schema, column descriptions, and knowledge base.
 
+- **src/conversational_txt2sql/database_utils.py**  
+  Utilities for interacting with PostgreSQL databases, including connecting, executing SQL queries, and initializing databases from `.sql` dump files. Provides functions to execute queries and manage test or template databases.
+
 - **src/conversational_txt2sql/ui.py**  
   Streamlit app for interactive use. Lets users enter a question, select a database, and view the generated SQL query with a fancy UI and response time.
 
@@ -129,40 +158,6 @@ The code above will print all public tables in your PostgreSQL instance, confirm
 
 - **README.md**  
   This documentation file.
-
----
-
-# How to Use
-
-## 1. Install Dependencies
-
-Install all dependencies (including UI) using [uv](https://github.com/astral-sh/uv):
-
-```bash
-uv sync --all-groups
-```
-
-Or just the main dependencies:
-
-```bash
-uv sync
-```
-
-## 2. Run the Streamlit UI
-
-```bash
-uv run streamlit run src/conversational_txt2sql/ui.py
-```
-
-## 3. Run the Main Pipeline (CLI)
-
-```bash
-uv run txt2sql_pipeline
-```
-
-## 4. Project Scripts
-
-You can also run scripts defined in `pyproject.toml` using `uv run <script_name>`, but for Streamlit apps, always use `streamlit run`.
 
 ---
 

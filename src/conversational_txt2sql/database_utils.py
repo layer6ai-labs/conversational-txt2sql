@@ -1,17 +1,12 @@
+import pandas as pd
 import psycopg2
 import os
 import glob
+from conversational_txt2sql import get_config
 
-DEFAULT_DB_CONFIG = {
-    "minconn": 3,
-    "maxconn": 10,
-    "user": "root",
-    "password": "123123",
-    "port": 5432,
-    "host": "localhost",
-}
+DEFAULT_DB_CONFIG = get_config()['DEFAULT_DB_CONFIG']
 
-def execute_sql_query(sql_query, db_name, db_config=None):
+def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
     """
     Executes a SQL query on the specified PostgreSQL database and returns the result.
 
@@ -21,7 +16,7 @@ def execute_sql_query(sql_query, db_name, db_config=None):
         db_config (dict, optional): Database configuration parameters.
 
     Returns:
-        list: The result of the query as a list of tuples.
+        df: The result of the query as a Dataframe.
     """
     # Use the provided db_config or fall back to the default configuration
     db_config = db_config or DEFAULT_DB_CONFIG
@@ -45,16 +40,22 @@ def execute_sql_query(sql_query, db_name, db_config=None):
 
         # Fetch all results
         result = cursor.fetchall()
-
+        
+        # Fetch Column names
+        colnames = [desc[0] for desc in cursor.description]
+        
+        # Create a dataframe
+        df = pd.DataFrame(result, columns=colnames)
+        
         # Close the cursor and connection
         cursor.close()
         conn.close()
 
-        return result
+        return df
 
     except psycopg2.Error as e:
         print(f"Error executing query: {e}")
-        return None
+        return pd.DataFrame()
 
 
 def initialize_database(dump_folder, db_name, db_config=None):
