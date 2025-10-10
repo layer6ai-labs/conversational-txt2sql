@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -e # -e means exit the script if any command fails
 
 # Wait for PostgreSQL to be ready
 until psql -U root -c '\l' 2>/dev/null; do
@@ -35,29 +35,19 @@ echo "NOTE: For two-phase transaction support, set 'max_prepared_transactions' >
 ############################
 # 1. Define DB → tables mapping
 ############################
+# If you are seeing an error on the `declare -A DATABASE_MAPPING=(` line,
+# the most likely reason is your script is being run with /bin/sh instead of /bin/bash.
+# Associative arrays (declare -A) are a Bash-only feature, not available in sh.
+
+# Ensure the script is running as Bash.
+# You can check by adding:
+#   echo $BASH_VERSION
+#   echo $0
+
+# Or, run the script explicitly as: bash init-databases_postgresql.sh
+
 declare -A DATABASE_MAPPING=(
-    ["archeology_scan_template"]="Projects Personnel Sites Equipment Scans Environment PointCloud Mesh Spatial Features Conservation Registration Processing QualityControl"
-    ["sports_events_template"]="circuits constructors drivers races constructor_results constructor_standings driver_standings lap_times pit_stops qualifying sprint_results"
-    ["cold_chain_pharma_compliance_template"]="Shipments Products ProductBatches Carriers Vehicles MonitoringDevices EnvironmentalMonitoring QualityCompliance IncidentAndRiskManagement InsuranceClaims ReviewsAndImprovements ShipSensorLink"
-    ["cross_border_template"]="DataFlow RiskManagement DataProfile SecurityProfile VendorManagement Compliance AuditAndCompliance"
-    ["crypto_exchange_template"]="users orders orderExecutions fees marketdata marketstats analyticsindicators riskandmargin accountbalances systemmonitoring Exchange_OrderType_Map"
-    ["cybermarket_pattern_template"]="markets vendors buyers products transactions transaction_products vendor_markets vendor_countries vendor_payment_methods communications connection_security risk_analytics alerts"
-    ["disaster_relief_template"]="DisasterEvents DistributionHubs Operations Supplies Transportation HumanResources Financials BeneficiariesAndAssessments EnvironmentAndHealth CoordinationAndEvaluation Operation_Hub_Map"
     ["exchange_traded_funds_template"]="families exchanges categories sectors bond_ratings securities funds family_categories family_exchanges sector_allocations bond_allocations holdings performance annual_returns risk_metrics"
-    ["fake_account_template"]="platforms accounts profiles security_sessions content_activity network_metrics interaction_metrics behavioral_scores risk_and_moderation cluster_analysis account_clusters monitoring"
-    ["households_template"]="locations infrastructure service_types households properties transportation_assets amenities"
-    ["hulushows_template"]="companies rollups core content_info availabilitys promo_info show_rollups"
-    ["insider_trading_template"]="traders instruments trader_relationships order_status_types trade_records market_conditions order_behaviour manipulation_signals sentiment_analytics corporate_events reg_compliance enforcement_actions"
-    ["labor_certification_applications_template"]="employer employer_poc attorney preparer worksite prevailing_wage cases case_attorney case_worksite"
-    ["mental_health_template"]="Facilities Clinicians Patients AssessmentBasics Encounters AssessmentSymptomsAndRisk AssessmentSocialAndDiagnosis TreatmentBasics TreatmentOutcomes"
-    ["museum_artifact_template"]="ArtifactsCore ArtifactRatings SensitivityData ExhibitionHalls Showcases EnvironmentalReadingsCore AirQualityReadings SurfaceAndPhysicalReadings LightAndRadiationReadings ConditionAssessments RiskAssessments ConservationAndMaintenance UsageRecords ArtifactSecurityAccess Monitor_Showcase_Map"
-    ["organ_transplant_template"]="Demographics Recipients_Demographics Medical_History HLA_Info Function_and_Recovery Clinical Recipients_Immunology Transplant_Matching Compatibility_Metrics Risk_Evaluation Allocation_Details Logistics Administrative_and_Review Data_Source_and_Quality"
-    ["planets_data_template"]="stars instruments_surveys planets orbital_characteristics physical_properties planet_instrument_observations data_quality_tracking"
-    ["polar_equipment_template"]="EquipmentType Equipment Location OperationMaintenance PowerBattery EngineAndFluids Transmission ChassisAndVehicle Communication CabinEnvironment LightingAndSafety WaterAndWaste Scientific WeatherAndStructure ThermalSolarWindAndGrid StationEquipmentType"
-    ["reverse_logistics_template"]="customers products orders returns quality_assessment return_processing financial_management case_management"
-    ["robot_fault_prediction_template"]="robot_record robot_details operation joint_performance joint_condition actuation_data mechanical_status system_controller maintenance_and_fault performance_and_safety"
-    ["solar_panel_template"]="panel_models plants plant_panel_model plant_record electrical_performance environmental_conditions mechanical_condition operational_metrics inspection alert"
-    ["virtual_idol_template"]="Fans VirtualIdols Interactions MembershipAndSpending Engagement CommerceAndCollection SocialCommunity EventsAndClub LoyaltyAndAchievements PreferencesAndSettings ModerationAndCompliance SupportAndFeedback RetentionAndInfluence AdditionalNotes"
 )
 
 
@@ -122,7 +112,9 @@ import_table_files() {
                 echo "Error importing ${sql_file} into database ${db_template}. Check /tmp/error.log for details."
             fi
         else
-            echo "Warning: SQL file ${sql_file} not found for table ${table}"
+            echo "Error: SQL file ${sql_file} not found for table ${table}"
+            # trigger stop
+            # exit 1
         fi
     done
 }
@@ -137,7 +129,7 @@ if [[ -s /tmp/error.log ]]; then
     cat /tmp/error.log
 fi
 
-# rm -f /tmp/error.log
+rm -f /tmp/error.log
 
 ############################
 # 3. Mark these template DBs as 'datistemplate = true'

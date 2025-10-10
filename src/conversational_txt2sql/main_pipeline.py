@@ -4,10 +4,10 @@ from conversational_txt2sql.evaluation import llm_judge
 from conversational_txt2sql.utils import execute_sql_query, initialize_database
 import re
 import os
-print(os.getcwd())
 
-DUMP_FOLDER = "data/bird-interact-full-dumps"
-DATASET_PATH = "data/"
+
+# DUMP_FOLDER = "data/bird-interact-full-dumps"
+DATASET_PATH = "data/table_schema_info"
 
 def get_user_input(prompt: str, default_value: str = "") -> str:
     """
@@ -66,7 +66,8 @@ def main():
     print("Step 3: LLM Response:")
     print(llm_response)
     
-    initialize_database(DUMP_FOLDER, db)
+    # NOT REQUIRED: Because we are doing this on initialization of postgres container
+    # initialize_database(DUMP_FOLDER, db)
 
     # Step 4: Extract the SQL query from the LLM's response
     predicted_sql_query = extract_sql_from_response(llm_response)

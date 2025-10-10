@@ -1,0 +1,27 @@
+# Dockerfile.postgresql
+FROM postgres:14.12
+
+# Set up environment variables for user and password
+ENV POSTGRES_USER=root
+ENV POSTGRES_PASSWORD=123123
+
+# Install PostGIS packages for PostgreSQL 14
+RUN apt-get update \
+    && apt-get install -y postgis postgresql-14-postgis-3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the initialization script to the entrypoint directory
+COPY ./init-databases_postgresql.sh /docker-entrypoint-initdb.d/
+
+# Set permissions for the initialization script
+RUN chmod +x /docker-entrypoint-initdb.d/init-databases_postgresql.sh
+
+# RUN /bin/bash /docker-entrypoint-initdb.d/init-databases_postgresql.sh
+# The script in /docker-entrypoint-initdb.d/init-databases_postgresql.sh will be run automatically by the official postgres Docker entrypoint on first container startup.
+# No additional code is required to "run" this script; simply ensuring it is copied into that directory (as above) is sufficient.
+# If you want to force its execution outside initdb (not recommended), you could do so with:
+# RUN /docker-entrypoint-initdb.d/init-databases_postgresql.sh
+# However, this is not the Docker best practice for Postgres images.
+# So nothing more to insert here.
+
+

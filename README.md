@@ -6,7 +6,7 @@ A multimodal AI project that lets you interact with your database using natural 
 
 ---
 
-## Directory Structure
+# Directory Structure
 
 ```
 conversational-txt2sql/
@@ -39,7 +39,72 @@ OTHER_ENV_VAR=your_value
 - Update `.gitignore` to include `.env` if not already present.
 - Access these variables in your code using libraries like `python-dotenv`.
 
-## File Descriptions
+----
+
+# 🐘 Setting Up PostgreSQL with Docker
+
+To quickly get started with a local PostgreSQL database (matching the expected configuration for this project), we recommend using Docker Compose.
+
+## 1. Launch the PostgreSQL Container
+
+1. Open a terminal and navigate to the `scripts/build_postgres_container` directory:
+
+    ```bash
+    cd scripts/build_postgres_container
+    ```
+
+2. Start the PostgreSQL service:
+
+    ```bash
+    docker compose up --build
+    ```
+
+This command builds (if necessary) and runs a PostgreSQL container in the background.
+
+> **Tip:** The default configuration uses `user=root`, `password=123123`, and `port=5432` (see `scripts/build_postgres_container/Dockerfile.postgresql`). By default, the database name will look like `exchange_traded_funds_template` (note the `_template` suffix), unless otherwise specified.
+
+
+---
+
+## 2. Test Your Connection with Python
+
+After the container is running, verify the database is accessible using the following Python snippet:
+
+```python
+import psycopg2
+
+# Update these parameters if your configuration is different:
+conn = psycopg2.connect(
+    dbname="exchange_traded_funds_template",  # Use the "_template" suffix
+    user="root",
+    password="123123",
+    host="localhost",
+    port=5432,
+)
+
+cursor = conn.cursor()
+
+cursor.execute("""
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+    ORDER BY table_name;
+""")
+
+for row in cursor.fetchall():
+    print(row)
+
+cursor.close()
+conn.close()
+```
+
+The code above will print all public tables in your PostgreSQL instance, confirming a successful connection.
+
+---
+
+
+
+# File Descriptions
 
 - **data/**  
   Contains database-specific files: schema, column meanings, and knowledge base for prompt context.
@@ -67,9 +132,9 @@ OTHER_ENV_VAR=your_value
 
 ---
 
-## How to Use
+# How to Use
 
-### 1. Install Dependencies
+## 1. Install Dependencies
 
 Install all dependencies (including UI) using [uv](https://github.com/astral-sh/uv):
 
@@ -83,25 +148,25 @@ Or just the main dependencies:
 uv sync
 ```
 
-### 2. Run the Streamlit UI
+## 2. Run the Streamlit UI
 
 ```bash
 uv run streamlit run src/conversational_txt2sql/ui.py
 ```
 
-### 3. Run the Main Pipeline (CLI)
+## 3. Run the Main Pipeline (CLI)
 
 ```bash
 uv run txt2sql_pipeline
 ```
 
-### 4. Project Scripts
+## 4. Project Scripts
 
 You can also run scripts defined in `pyproject.toml` using `uv run <script_name>`, but for Streamlit apps, always use `streamlit run`.
 
 ---
 
-## Customization
+# Customization
 
 - Add more databases by placing their schema and metadata in the `data/` directory.
 - Extend the UI by editing `src/conversational_txt2sql/ui.py`.
@@ -109,13 +174,13 @@ You can also run scripts defined in `pyproject.toml` using `uv run <script_name>
 
 ---
 
-## License
+# License
 
 MIT License
 
 ---
 
-## Authors
+# Authors
 
 MultiModal AI Bootcamp Team
 
