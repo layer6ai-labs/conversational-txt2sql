@@ -33,3 +33,23 @@ generate_sql:
   expected_output: >
     A single, concise, well-formatted PostgreSQL SQL query that fully addresses the user's request. The query should be optimal, syntactically correct, and use only the supplied database documentation. No extra explanations or text.
   agent: sql_generator
+
+
+execute_debug_sql:
+  description: >
+    Evaluate and debug a provided PostgreSQL SQL query by running it against the target database and analyzing the results. The SQL query to be executed will be present within <SQL> and </SQL> tags. If the query executes successfully, return the result set in a clear, tabular format. If execution fails, supply a detailed error message, identify the root cause (syntax error, missing table/column, type mismatch, etc.), and suggest a specific corrected SQL query. Reference only real tables and columns from the provided schema/documentation—do not fabricate structure. Explanations should be concise and actionable, focused on enabling the user to quickly resolve issues and achieve valid SQL execution. If required, wrap suggestions or corrections in <SQL> ... </SQL> tags.
+
+    # SQL Query to execute (found between <SQL> and </SQL> tags)
+    # (The SQL query is supplied directly within the <SQL> ... </SQL> block.)
+
+    # Database Name:
+    {db}
+
+    # Execution Result/Error & Debug Output:
+    # (supply after running the query)
+
+  expected_output: >
+    - If the query succeeds: the raw result set in a tabular format as a Pandas Dataframe that can be further copied over to a .csv file
+    - If the query fails: the database error message, root cause analysis, and a corrected SQL query suggestion (if possible).
+  agent: sql_executor_debugger
+  context: [generate_sql]

@@ -54,6 +54,39 @@ class ConversationalText2SQLCrew:
         """
         return Task(config=self.tasks_config["generate_sql"])
 
+    @agent
+    def sql_executor_debugger(self) -> Agent:
+        """
+        Agent responsible for executing and debugging SQL queries.
+
+        This agent receives a proposed SQL query and is tasked with running it against the specified PostgreSQL database.
+        If the query executes successfully, it returns the result set in a clear, tabular format.
+        If the execution fails, the agent provides the error, a root cause analysis, and suggests a corrected SQL query if possible.
+        The agent makes use of database tools to interact with the backend and ensures responses are concise and actionable.
+        """
+        return Agent(
+            config=self.agents_config["sql_executor_debugger"],
+            verbose=True,
+            llm=llm,
+        )
+
+    @task
+    def execute_debug_sql(self) -> Task:
+        """
+        Task to execute and debug a given PostgreSQL SQL query.
+
+        This task utilizes the SQL executor/debugger agent to:
+        - Run a proposed SQL query against the specified database.
+        - Return the query's result set if execution succeeds, in a tabular or CSV format.
+        - If execution fails, provide a detailed error message, root cause analysis, and a suggestion for a corrected SQL query (if possible).
+        - Ensure all analysis and corrections rely strictly on the provided schema and documentation, avoiding speculation or fabrication.
+        """
+        return Task(
+            config=self.tasks_config["execute_debug_sql"],
+            tools=[execute_sql_query_tool],
+            output_file="query_results.csv",
+        )
+
     @crew
     def crew(self) -> Crew:
         """
@@ -63,5 +96,5 @@ class ConversationalText2SQLCrew:
             agents=self.agents,  # Automatically created by the @agent decorator
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
-            verbose=False,
+            verbose=True,
         )
