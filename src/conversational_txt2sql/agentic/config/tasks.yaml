@@ -1,0 +1,35 @@
+generate_sql:
+  description: >
+    Generate a highly accurate, efficient, and ready-to-run PostgreSQL SQL query that directly and completely answers the user's question. Use only the information provided in the supplied schema context, column descriptions, and external definitions—do not reference or assume any undocumented tables, columns, or relationships.
+
+    Detailed Instructions:
+    - Carefully analyze the user's question to identify key intents, target entities, filters, conditions, and required outputs.
+    - Work strictly within the provided documentation for {db}: 
+        * Use only tables, columns, and relationships explicitly found in the schema context, column descriptions, or external knowledge.
+        * Never invent or speculate about missing schema elements.
+    - Adhere to all documented data types, primary keys, foreign keys, and constraints.
+    - Accurately map ambiguous or vague phrases to the best matching schema elements based on names and descriptions.
+    - Leverage PostgreSQL best practices throughout:
+        * Use ILIKE (not LIKE) for case-insensitive searches.
+        * Use aggregations, subqueries, window functions, and computations only when directly required.
+        * Avoid extraneous joins, redundancy, or unnecessary complexity—minimize the scope of the query to what is necessary.
+    - Ensure the output contains only the requested columns and data, with clean formatting.
+    - Exclude ALL explanations, comments, or extra text. Your output must be only the SQL statement.
+    - If documentation gaps exist, make the most reasonable data-driven assumption to meet the user's intent, but never invent schema details.
+    - Wrap your answer in <SQL> ... </SQL> tags and provide nothing outside that block.
+
+    # User's Question:
+    {user_question}
+
+    # Database Schema Context:
+    {db_schema}
+
+    # Column Meanings and Descriptions (if any):
+    {column_descriptions}
+
+    # Definitions and External Knowledge (if any):
+    {knowledge}
+
+  expected_output: >
+    A single, concise, well-formatted PostgreSQL SQL query that fully addresses the user's request. The query should be optimal, syntactically correct, and use only the supplied database documentation. No extra explanations or text.
+  agent: sql_generator

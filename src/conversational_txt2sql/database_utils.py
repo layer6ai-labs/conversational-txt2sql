@@ -58,6 +58,10 @@ def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
         print(f"Error executing query: {e}")
         return pd.DataFrame()
 
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return pd.DataFrame()
+
 
 def initialize_database(dump_folder, db_name, db_config=None):
     """

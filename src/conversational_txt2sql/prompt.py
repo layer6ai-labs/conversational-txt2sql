@@ -27,17 +27,16 @@ SQL Query:
 """
 
 
-def generate_prompt(DATASET_PATH: str, question: str, db: str) -> str:
+def get_db_schema_and_metadata(DATASET_PATH: str, db: str):
     """
-    Generate a prompt for the LLM based on the question and database context.
+    Loads the database schema, column descriptions, and external knowledge for a given database.
 
     Args:
         DATASET_PATH: Path to the dataset directory
-        question: User's question
         db: Database name
 
     Returns:
-        Formatted prompt string
+        Tuple of (db_schema, column_descriptions, knowledge)
     """
     with open(os.path.join(DATASET_PATH, db, f"{db}_schema.txt"), "r") as file:
         db_schema = file.read()
@@ -50,9 +49,31 @@ def generate_prompt(DATASET_PATH: str, question: str, db: str) -> str:
     with open(os.path.join(DATASET_PATH, db, f"{db}_kb.jsonl"), "r") as file:
         knowledge = file.read()
 
+    return {
+        "db": db,
+        "db_schema": db_schema,
+        "column_descriptions": column_descriptions,
+        "knowledge": knowledge,
+    }
+
+
+def generate_prompt(DATASET_PATH: str, question: str, db: str) -> str:
+    """
+    Generates a formatted prompt for an LLM to convert a user question into an SQL query,
+    using the database schema, column descriptions, and external knowledge for a given database.
+
+    Args:
+        DATASET_PATH (str): Path to the dataset directory.
+        question (str): The user's natural language question.
+        db (str): The name of the database.
+
+    Returns:
+        str: The formatted prompt string for the LLM.
+    """
+    db_schema_metadata = get_db_schema_and_metadata(DATASET_PATH, db)
     return system_prompt.format(
-        db_schema=db_schema,
-        column_descriptions=column_descriptions,
-        knowledge=knowledge,
+        db_schema=db_schema_metadata["db_schema"],
+        column_descriptions=db_schema_metadata["column_descriptions"],
+        knowledge=db_schema_metadata["knowledge"],
         question=question,
     )
