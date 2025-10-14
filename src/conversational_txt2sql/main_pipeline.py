@@ -1,103 +1,127 @@
+import sys
+from typing import List, Dict, Tuple
+
+import pandas as pd
+from pydantic import BaseModel
+
+from conversational_txt2sql.agentic.crew import ConversationalText2SQLCrew
 from conversational_txt2sql.call_api import get_query_response
-from conversational_txt2sql.prompt import generate_prompt
-from conversational_txt2sql.evaluation import llm_judge
-from conversational_txt2sql.database_utils import execute_sql_query, initialize_database
-import re
-import os
+from conversational_txt2sql.prompt import (
+    AMBIGUITY_PROMPT,
+    SUMMARIZE_CLARIFICATIONS_PROMPT,
+    generate_prompt,
+    get_db_schema_and_metadata,
+)
 
-
-# DUMP_FOLDER = "data/bird-interact-full-dumps"
 DATASET_PATH = "data/table_schema_info"
-
 
 def get_user_input(prompt: str, default_value: str = "") -> str:
     """
-    Get user input with a default value.
-
-    Args:
-        prompt: The prompt to display to the user
-        default_value: The default value to use if user enters nothing
-
-    Returns:
-        User input if provided, otherwise the default value
+    Prompt the user for input, falling back to a default value if no input is entered.
     """
     if default_value:
         display_prompt = f"{prompt} (default: '{default_value[:50]}{'...' if len(default_value) > 50 else ''}'): "
     else:
         display_prompt = f"{prompt}: "
-
     user_input = input(display_prompt).strip()
     return user_input if user_input else default_value
 
+class AmbiguityCheckResponse(BaseModel):
+    clarity: str
+    clarifying_question: str
 
-def extract_sql_from_response(response: str) -> str:
+def check_ambiguity_until_clear(
+    user_question: str, db: str, chat_history: List[Dict]
+) -> Tuple[str, AmbiguityCheckResponse, List[Dict]]:
     """
-    Extracts the SQL query from the LLM response between <SQL> and </SQL> tags.
-
-    Args:
-        response: The response string from the LLM.
-
-    Returns:
-        The extracted SQL query, stripped of leading/trailing whitespace.
-        Returns an empty string if no SQL tags are found.
+    Iteratively check for ambiguity and guide the user to clarify until a clear, relevant question is obtained.
+    Returns the clarified question, the final LLM response, and the updated chat history.
     """
-    match = re.search(r"<SQL>(.*?)</SQL>", response, re.DOTALL | re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
-    return ""
+    while True:
+        ambiguity_prompt = generate_prompt(DATASET_PATH, user_question, db, AMBIGUITY_PROMPT)
+        ambiguity_llm_response: AmbiguityCheckResponse = get_query_response(
+            prompt=ambiguity_prompt,
+            model_name="gpt-4.1-mini",
+            mode="structured",
+            text_format=AmbiguityCheckResponse,
+        )
+        print("\n[Ambiguity Check] LLM Response:", ambiguity_llm_response)
 
+        clarity_status = ambiguity_llm_response.clarity.strip().lower()
+        if clarity_status == "clear":
+            break
+        elif clarity_status == "unrelated":
+            print("⚠️  Your question was detected as unrelated to the database. Please enter a relevant question.")
+            user_question = get_user_input("Re-enter question", user_question)
+            # Don't append this to chat_history—question was not relevant.
+        elif clarity_status == "not clear":
+            print("⚠️  Ambiguous input detected. Model suggests clarification is needed.")
+            if ambiguity_llm_response.clarifying_question:
+                print(f"Clarifying Question: {ambiguity_llm_response.clarifying_question}")
+            clarification = get_user_input("Please clarify", user_question)
+            chat_history.append({"role": "user", "content": clarification})
+            question_and_clarifications = user_question
+            if clarification and clarification != user_question:
+                question_and_clarifications += "\n" + clarification
+            summarization_prompt = generate_prompt(
+                DATASET_PATH,
+                question_and_clarifications,
+                db,
+                SUMMARIZE_CLARIFICATIONS_PROMPT,
+            )
+            summary = get_query_response(
+                prompt=summarization_prompt,
+                model_name="gpt-4.1-mini",
+                mode="chat",
+            )
+            print(f"[Summary after clarification] {summary}")
+            user_question = summary
+        else:
+            print(f"⚠️  Unexpected clarity status from LLM: '{clarity_status}'. Review required.")
+            break
+    return user_question, ambiguity_llm_response, chat_history
 
 def main():
-    """Main function to run the text-to-SQL evaluation pipeline."""
-    # Step 1: Get the input question and database context with defaults
-    default_question = "I need to find the top-performing income funds for a client. Could you please identify all the premium funds available? For each one, calculate its secure income efficiency score. Please show me the fund's ticker symbol, its name, and its score."
+    print("=" * 60)
+    print("  Conversational Text2SQL Pipeline")
+    print("=" * 60)
+    # Defaults (override by prompting, but fallback to defaults in non-interactive)
+    default_question = """I need to find the top-performing income funds for a client. Could you please identify all the premium funds available? For each one, calculate its secure income efficiency score. Please show me the fund's ticker symbol, its name, and its score."""
+    
     default_db = "exchange_traded_funds"
 
-    # Get user input with default values
-    question = get_user_input("Enter Question: ", default_question)
-    db = get_user_input("Enter Database name: ", default_db)
+    try:
+        question = get_user_input("Enter Question", default_question)
+        db = get_user_input("Enter Database name", default_db)
+    except (EOFError, KeyboardInterrupt):
+        print("\nInput interrupted. Exiting.")
+        sys.exit(1)
+    # Chat history helps provide continuity if multiple clarifications occur
+    chat_history: List[Dict] = []
 
-    # Step 2: Create a prompt for the LLM
-    prompt = generate_prompt(DATASET_PATH, question, db)
-    print("Step 2: Generated Prompt:")
-    print(prompt)
+    # Step 1: Ambiguity Resolution
+    question, ambiguity_llm_response, chat_history = check_ambiguity_until_clear(
+        question, db, chat_history
+    )
+    print("\n[After Ambiguity Resolution]")
+    print("Final user question:", question)
+    print("LLM Ambiguity Response:", ambiguity_llm_response)
+    print("Chat History:", chat_history)
 
-    # Step 3: Get the response from the LLM
-    llm_response = get_query_response(prompt=prompt, model_name="gpt-4.1-mini")
-    print("Step 3: LLM Response:")
-    print(llm_response)
+    # Step 2: Generate SQL with clarified question
+    db_schema_inputs = get_db_schema_and_metadata(
+        DATASET_PATH=DATASET_PATH,
+        db=db,
+    )
+    db_schema_inputs["user_question"] = question
 
-    # NOT REQUIRED: Because we are doing this on initialization of postgres container
-    # initialize_database(DUMP_FOLDER, db)
-
-    # Step 4: Extract the SQL query from the LLM's response
-    predicted_sql_query = extract_sql_from_response(llm_response)
-    print("Step 4: Extracted SQL Query:")
-    print(predicted_sql_query)
-    if not predicted_sql_query:
-        print("No SQL query found in the LLM response.")
-        return
-
-    predicted_sql_query = "WITH BondQuality AS (\n    SELECT\n        fundlink,\n        SUM(ba.allocationpct) FILTER (WHERE br.creditmark IN ('us_government', 'aaa', 'aa')) AS high_quality_alloc\n    FROM\n        bond_allocations ba\n    INNER JOIN\n        bond_ratings br ON ba.ratinglink = br.ratekey\n    GROUP BY\n        fundlink\n),\nFundRatios AS (\n    SELECT\n        tickersym,\n        shortlabel,\n        -- The NULLIF function prevents division-by-zero errors if the net expense is 0.\n        (fundmetrics ->> 'Yield_Rate')::numeric / NULLIF((fundmetrics ->> 'Expense_Net')::numeric, 0) AS yter\n    FROM\n        funds\n    WHERE\n        (fundmetrics ->> 'Yield_Rate')::numeric > 0\n)\nSELECT\n    f.tickersym,\n    f.shortlabel,\n    -- The RANK() window function assigns a rank to each fund based on its final score.\n    RANK() OVER (ORDER BY (fr.yter * bq.high_quality_alloc) DESC) AS premier_rank,\n    (fr.yter * bq.high_quality_alloc) AS secure_income_score\nFROM\n    funds f\nINNER JOIN\n    FundRatios fr ON f.tickersym = fr.tickersym\nINNER JOIN\n    BondQuality bq ON f.tickersym = bq.fundlink\nWHERE\n    fr.yter > 15 AND bq.high_quality_alloc > 0.6\nORDER BY\n    premier_rank;"  # Example SQL query for testing
-    # Step 5: Execute the predicted SQL query to get its results
-    print("Step 5a: Executing the predicted SQL query...")
-    predicted_results = execute_sql_query(predicted_sql_query, db)
-    print("\n\nStep 5b: Predicted SQL Query Results:")
-    print(predicted_results)
-
-    # # Step 6: Get and execute the ground truth SQL query for comparison
-    # ground_truth_query = get_ground_truth_query(question, db)
-    # ground_truth_results = execute_sql_query(ground_truth_query, db)
-
-    # # Step 7: Compare the queries: Generated SQL and Ground Truth SQL
-
-    # comparison = llm_judge(predicted_sql_query, ground_truth_query)
-
-    # # Step 8: Compare the results and print the evaluation
-    # evaluation_outcome = evaluate_results(predicted_results, ground_truth_results)
-    # print("\n--- FINAL RESULT ---")
-    # print(evaluation_outcome)
-
+    print("\n[SQL Generation]")
+    response = ConversationalText2SQLCrew().crew().kickoff(inputs=db_schema_inputs)
+    if hasattr(response, "pydantic") and hasattr(response.pydantic, "df_output"):
+        parsed_sql_output = pd.DataFrame(response.pydantic.df_output)
+        print(parsed_sql_output)
+    else:
+        print("No SQL output was returned.")
 
 if __name__ == "__main__":
     main()

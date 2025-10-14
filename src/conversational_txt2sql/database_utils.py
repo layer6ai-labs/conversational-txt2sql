@@ -1,13 +1,15 @@
+import glob
+import os
+
 import pandas as pd
 import psycopg2
-import os
-import glob
+
 from conversational_txt2sql import get_config
 
 DEFAULT_DB_CONFIG = get_config()["DEFAULT_DB_CONFIG"]
 
 
-def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
+def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame | list:
     """
     Executes a SQL query on the specified PostgreSQL database and returns the result.
 
@@ -52,15 +54,17 @@ def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame:
         cursor.close()
         conn.close()
 
-        return df
+        # Convert the DataFrame to records format before returning it
+        # so that you can serialize it.
+        return df.to_dict(orient="records")
 
     except psycopg2.Error as e:
         print(f"Error executing query: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame().to_dict(orient="records") # this will return []
 
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame().to_dict(orient="records") # this will return []
 
 
 def initialize_database(dump_folder, db_name, db_config=None):
