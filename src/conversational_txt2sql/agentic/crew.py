@@ -1,9 +1,10 @@
 import os
-from typing import Optional
+from typing import Any
 
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 from conversational_txt2sql import get_config
 
@@ -13,9 +14,13 @@ from conversational_txt2sql.agentic.tools.database_tools import execute_sql_quer
 # Load environment variables from .env file
 load_dotenv()
 
-OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
 
 llm = LLM(model=get_config()["MODEL"], api_key=OPENAI_API_KEY)
+
+
+class DataFrameOutputModel(BaseModel):
+    df_output: list[dict[str, Any]]
 
 
 @CrewBase
@@ -73,18 +78,18 @@ class ConversationalText2SQLCrew:
     @task
     def execute_debug_sql(self) -> Task:
         """
-        Task to execute and debug a given PostgreSQL SQL query.
+        Task for executing and debugging a PostgreSQL SQL query.
 
-        This task utilizes the SQL executor/debugger agent to:
-        - Run a proposed SQL query against the specified database.
-        - Return the query's result set if execution succeeds, in a tabular or CSV format.
-        - If execution fails, provide a detailed error message, root cause analysis, and a suggestion for a corrected SQL query (if possible).
-        - Ensure all analysis and corrections rely strictly on the provided schema and documentation, avoiding speculation or fabrication.
+        This task engages the SQL executor/debugger agent to:
+        - Execute a provided SQL query on the designated database.
+        - If successful, return the query's result set in a clear tabular or CSV format.
+        - If unsuccessful, supply a comprehensive error message, root cause explanation, and, if possible, a corrected SQL query suggestion.
+        - Ensure all diagnostics and corrections are grounded solely in the actual schema and documentation, strictly avoiding unsupported assumptions.
         """
         return Task(
             config=self.tasks_config["execute_debug_sql"],
             tools=[execute_sql_query_tool],
-            output_file="query_results.csv",
+            output_pydantic=DataFrameOutputModel,
         )
 
     @crew

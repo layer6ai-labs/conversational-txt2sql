@@ -8,6 +8,7 @@ from conversational_txt2sql.database_utils import execute_sql_query
 DEFAULT_DB_CONFIG = get_config()["DEFAULT_DB_CONFIG"]
 
 
+# , result_as_answer=True
 @tool("execute_sql_query_tool")
 def execute_sql_query_tool(
     sql_query: str, db_name: str, db_config: None | dict[str, Any] = DEFAULT_DB_CONFIG
