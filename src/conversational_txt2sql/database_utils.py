@@ -60,11 +60,11 @@ def execute_sql_query(sql_query, db_name, db_config=None) -> pd.DataFrame | list
 
     except psycopg2.Error as e:
         print(f"Error executing query: {e}")
-        return pd.DataFrame().to_dict(orient="records") # this will return []
+        return pd.DataFrame().to_dict(orient="records")  # this will return []
 
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return pd.DataFrame().to_dict(orient="records") # this will return []
+        return pd.DataFrame().to_dict(orient="records")  # this will return []
 
 
 def initialize_database(dump_folder, db_name, db_config=None):
