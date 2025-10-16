@@ -129,6 +129,83 @@ The code above will print all public tables in your PostgreSQL instance, confirm
 
 ---
 
+# Conversational Agents & CrewAI Architecture 🧠🤖
+
+## Multi-Agent Collaboration with CrewAI
+
+At the heart of this project is a **CrewAI-powered multi-agent architecture**: each agent is designed for a specialized task, and together they transform your natural language question into precise SQL and actionable database results.
+
+**Why CrewAI?** CrewAI lets us build a robust 'team' of expert agents that communicate and collaborate transparently—yielding reliable, debuggable, and profoundly accurate SQL translation.
+
+---
+
+### 🥇 The Agents — Who Does What?
+
+1. **SQL Generator Agent**
+   - **Role**: _Expert Postgres SQL Architect & Complex Query Interpreter_
+   - **Goal**: Converts your natural language question and database schema into a highly accurate, production-ready SQL query—grounded strictly in the known schema and definitions.
+   - **Superpowers**:
+     - Deep schema/column analysis.
+     - Handles ambiguity with clarifying questions internally (and can ask for more context from the Executor agent).
+     - Only outputs SQL—no explanations, no comments!
+   - **Delegation**: Collaborates with the Executor agent for troubleshooting difficult queries.
+
+2. **SQL Executor & Debugger Agent**
+   - **Role**: _Advanced SQL Execution Engineer, Query Validator & Troubleshooting Maestro_
+   - **Goal**: Executes the generated SQL query, validates correctness, and provides debugging if the first attempt fails. Returns clear, tabular results—and if things break, steps through errors to iteratively repair the query.
+   - **Superpowers**:
+     - Detects failures (syntax/data/permissions/logic).
+     - Diagnoses and explains root causes.
+     - Attempts auto-fixes for SQL issues (rooted in the schema) and re-executes.
+     - Collaborates directly with the SQL Generator agent for creative recovery (never guessing, always traceable to schema).
+
+---
+
+### 🚦 The CrewAI Pipeline: How Agents Work Together
+
+1. **User submits a natural language question and selects a database.**
+2. **Ambiguity-clarification loop (via LLM):** Is the question clear? If not, the user is prompted for clarifications, iteratively, until intent is unambiguous.
+3. **SQL Generator Agent** takes the clarified input and produces a best-possible PostgreSQL query, strictly using the schema/metadata provided.
+4. **SQL Executor & Debugger Agent** receives the SQL, runs it against the target database, and:
+    - If successful: returns tabular results.
+    - If failed: performs deep error analysis, suggests and may auto-fix the query, and (if needed) consults with the SQL Generator agent for re-phrasing or creative solutioning.
+5. **Results, errors, and troubleshooting traces are always displayed with full transparency.**
+
+**Visual Overview:**
+
+```
+      ┌───────────────┐       ┌───────────────────────┐      ┌────────────────────────────────────────┐      ┌──────────────┐
+User→│ UI/CLI Client │─────▶│  Ambiguity Resolver   │────▶│ SQL Generator Agent  →  Executor Agent │────▶│  Database   │
+      └───────────────┘       └───────────────────────┘      └─────────────────┬─────────────┬────────┘      └──────────────┘
+                                                                  ▲             │
+                                                           Collaboration/       │
+                                                             Clarifications     │
+                                                                  │             ▼
+                                                      ┌─────────────────────────────┐
+                                                      │      Results/Errors         │
+                                                      └─────────────────────────────┘
+```
+
+---
+
+### 🔬 Agent Details from Configuration
+
+- **Source YAML:** `src/conversational_txt2sql/agentic/config/agents.yaml`
+    - Each agent is configured with a `role`, `goal`, and detailed `backstory` to drive skillful, context-grounded behaviors.
+    - Both agents are permitted to delegate/collaborate for optimal results.
+- **Tasks & Sequencing:**
+    - **Source YAML:** `src/conversational_txt2sql/agentic/config/tasks.yaml`
+    - Tasks are mapped one-to-one to agents and detail prompt construction and hand-off responsibilities.
+    - Agents cannot hallucinate/guess schema: all troubleshooting is evidence-based!
+
+### ✨ Extending the Crew
+- Add new agents or capabilities by editing the agents.yaml and tasks.yaml files, then wiring them up in `crew.py`.
+- The CrewAI framework makes it easy to build multi-agent research, analytics, or automation teams—just describe the new expertise and hook it into the crew!
+
+---
+
+For more details, see the [agent YAML configs](src/conversational_txt2sql/agentic/config/agents.yaml) and the actual crew code in [crew.py](src/conversational_txt2sql/agentic/crew.py).
+
 
 # File Descriptions
 

@@ -19,19 +19,21 @@ def main():
     st.set_page_config("Conversational Text2SQL Pipeline", page_icon="🦾", layout="wide")
     st.markdown("<h2 style='color:#247D24;text-align:center;'>Conversational Text2SQL Pipeline 🗣️📊🦾</h2>", unsafe_allow_html=True)
 
-    # ---- Sidebar: Conversation History & Reset ----
+    # ---- Sidebar: Clear Button ALWAYS at Top & Conversation History ----
     with st.sidebar:
+        # Always display the clear button at the top
+        if st.button("Clear All / Start New"):
+            for k in [
+                "conversation_history","clarity_status","clarification_pending","ambiguity_llm_response","final_question","result_df","result_ready", "show_unrelated_error"]:
+                st.session_state.pop(k, None)
+            st.rerun()
+
         st.markdown("### Conversation History")
         if "conversation_history" in st.session_state and st.session_state["conversation_history"]:
             for i, q in enumerate(st.session_state["conversation_history"], 1):
                 st.markdown(f"**{i}.** {q}")
         else:
             st.info("No conversation yet.")
-        if st.button("Clear All / Start New"):
-            for k in [
-                "conversation_history","clarity_status","clarification_pending","ambiguity_llm_response","final_question","result_df","result_ready"]:
-                st.session_state.pop(k, None)
-            st.rerun()
 
     # ---- Session State ----
     if "conversation_history" not in st.session_state:
@@ -48,13 +50,20 @@ def main():
         st.session_state["result_ready"] = False
     if "result_df" not in st.session_state:
         st.session_state["result_df"] = None
+    if "show_unrelated_error" not in st.session_state:
+        st.session_state["show_unrelated_error"] = False
 
     # ---- Main Input Form ----
     with st.form("question_form"):
-        default_question = "I need to find the top-performing income funds for a client. Could you please identify all the premium funds available? For each one, calculate its secure income efficiency score. Please show me the fund's ticker symbol, its name, and its score."
+        default_question = "Show me the performance trend for AADR. For each year, calculate its outperformance, the prior year's number, and the change."
         question = st.text_area("Enter your question:", value=st.session_state["final_question"] or default_question, height=120)
         db = st.selectbox("Select database:", [DEFAULT_DB])
         submit = st.form_submit_button("Submit")
+
+    # ---- Error display for unrelated ----
+    if st.session_state.get("show_unrelated_error"):
+        st.error("❌ The entered question was detected as unrelated to the database. Please enter a relevant question.")
+        st.session_state["show_unrelated_error"] = False
 
     # ---- Clarification Input ----
     clarification = ""
@@ -88,8 +97,8 @@ def main():
                 if clarity_status == "unrelated":
                     st.session_state["conversation_history"] = []
                     st.session_state["final_question"] = ""
-                    st.error("❌ The entered question was detected as unrelated to the database. Please enter a relevant question.")
                     st.session_state["clarification_pending"] = False
+                    st.session_state["show_unrelated_error"] = True
                 elif clarity_status == "clear":
                     st.session_state["final_question"] = question_and_clarification
                 st.rerun()
@@ -114,8 +123,8 @@ def main():
         if clarity_status == "unrelated":
             st.session_state["conversation_history"] = []
             st.session_state["final_question"] = ""
-            st.error("❌ The entered question was detected as unrelated to the database. Please enter a relevant question.")
             st.session_state["clarification_pending"] = False
+            st.session_state["show_unrelated_error"] = True
         st.rerun()
 
     # ---- When question is CLEAR: Generate and Show Results ----
