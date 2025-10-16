@@ -4,8 +4,9 @@ https://platform.openai.com/docs/guides/structured-outputs?example=chain-of-thou
 """
 
 # %%
-from conversational_txt2sql.call_api import get_query_response
 from pydantic import BaseModel
+
+from conversational_txt2sql.call_api import get_query_response
 
 
 class Components(BaseModel):

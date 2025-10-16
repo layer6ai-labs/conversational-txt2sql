@@ -8,15 +8,15 @@ and error handling with retry logic.
 
 import os
 import time
-from typing import Any, Optional, Union
+from typing import Any
 
-from openai import OpenAI
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # Load environment variables from .env file
 load_dotenv()
 
-OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
 
 MODEL_CONFIG: dict[str, dict[str, str]] = {
     "gpt-4.1-mini": {
@@ -102,7 +102,7 @@ def get_query_response(
     top_p: float = 1.0,
     frequency_penalty: float = 0.0,
     presence_penalty: float = 0.0,
-    stop: Optional[Union[str, list[str]]] = None,
+    stop: str | list[str] | None = None,
     mode: str = "chat",
     text_format: Any = None,
 ) -> Any:
