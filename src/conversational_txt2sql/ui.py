@@ -214,6 +214,28 @@ def main():
     ):
         st.info("No SQL output was returned.")
 
+    # ✅ --- FOLLOW-UP QUESTION SECTION ---
+    st.markdown("---")
+    st.subheader("🔁 Ask a follow-up question")
+
+    with st.form("followup_form", clear_on_submit=True):
+        followup_q = st.text_area(
+            "Do you have another question?",
+            placeholder="e.g. Show the top 5 ETFs by performance this year",
+            height=100,
+        )
+        followup_submit = st.form_submit_button("Submit Follow-up")
+
+    if followup_submit and followup_q.strip():
+        # Treat follow-up just like a new question
+        st.session_state["conversation_history"].append(f"Follow-up: {followup_q}")
+        st.session_state["final_question"] = followup_q.strip()
+        st.session_state["clarity_status"] = None
+        st.session_state["clarification_pending"] = False
+        st.session_state["ambiguity_llm_response"] = None
+        st.session_state["result_ready"] = False
+        st.session_state["result_df"] = None
+        st.rerun()
     # ---- End ----
 
 
