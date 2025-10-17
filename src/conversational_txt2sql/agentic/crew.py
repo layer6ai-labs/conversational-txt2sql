@@ -23,6 +23,10 @@ class DataFrameOutputModel(BaseModel):
     df_output: list[dict[str, Any]]
 
 
+class GeneratedSQLOutput(BaseModel):
+    sql: str
+
+
 @CrewBase
 class ConversationalText2SQLCrew:
     """
@@ -57,7 +61,9 @@ class ConversationalText2SQLCrew:
         This task leverages the SQL generator agent to analyze the question using the provided database schema, column meanings, and definitions.
         The output is an accurate, executable, and well-formatted SQL query that answers the user's intent, strictly grounded in the available schema knowledge.
         """
-        return Task(config=self.tasks_config["generate_sql"])
+        return Task(
+            config=self.tasks_config["generate_sql"], output_pydantic=GeneratedSQLOutput
+        )
 
     @agent
     def sql_executor_debugger(self) -> Agent:
