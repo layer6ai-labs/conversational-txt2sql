@@ -4,7 +4,8 @@ import pandas as pd
 import streamlit as st
 from pydantic import BaseModel
 
-from conversational_txt2sql.agentic.crew import ConversationalText2SQLCrew
+from conversational_txt2sql.agentic.naive_crew import ConversationalText2SQLCrew
+from conversational_txt2sql.agentic.planner_crew import ConversationalText2SQLPlannerCrew
 from conversational_txt2sql.call_api import get_query_response
 from conversational_txt2sql.prompt import (
     AMBIGUITY_PROMPT,
@@ -184,7 +185,7 @@ def main():
         db_schema_inputs["user_question"] = st.session_state["final_question"]
         with st.spinner("Running Text2SQL agent and collecting results..."):
             response = (
-                ConversationalText2SQLCrew().crew().kickoff(inputs=db_schema_inputs)
+                ConversationalText2SQLPlannerCrew().crew().kickoff(inputs=db_schema_inputs)
             )
         # Expect DataFrameOutputModel-like output, convert to DataFrame:
         df = None

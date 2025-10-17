@@ -38,86 +38,26 @@ class ConversationalText2SQLCrew:
     agents_config = "config/agents.yaml"
     tasks_config = "config/tasks.yaml"
 
-    # @agent
-    # def sql_generator(self) -> Agent:
-    #     """
-    #     Agent responsible for analyzing natural language questions and generating accurate, executable PostgreSQL SQL queries using provided schema details and knowledge bases.
-    #     """
-    #     return Agent(
-    #         config=self.agents_config["sql_generator"],
-    #         verbose=True,
-    #         llm=llm,
-    #     )
-
-    # @task
-    # def generate_sql(self) -> Task:
-    #     """
-    #     Task to generate a PostgreSQL SQL query from a complex natural language user question.
-
-    #     This task leverages the SQL generator agent to analyze the question using the provided database schema, column meanings, and definitions.
-    #     The output is an accurate, executable, and well-formatted SQL query that answers the user's intent, strictly grounded in the available schema knowledge.
-    #     """
-    #     return Task(config=self.tasks_config["generate_sql"])
-
     @agent
-    def planner(self) -> Agent:
+    def sql_generator(self) -> Agent:
         """
-        Agent that creates a high-level execution plan (step-by-step)
-        from the user's natural language question.
+        Agent responsible for analyzing natural language questions and generating accurate, executable PostgreSQL SQL queries using provided schema details and knowledge bases.
         """
         return Agent(
-            config=self.agents_config["planner"],
+            config=self.agents_config["sql_generator"],
             verbose=True,
             llm=llm,
         )
 
     @task
-    def generate_plan(self) -> Task:
+    def generate_sql(self) -> Task:
         """
-        Task: turn user question into a structured high-level plan.
+        Task to generate a PostgreSQL SQL query from a complex natural language user question.
+
+        This task leverages the SQL generator agent to analyze the question using the provided database schema, column meanings, and definitions.
+        The output is an accurate, executable, and well-formatted SQL query that answers the user's intent, strictly grounded in the available schema knowledge.
         """
-        return Task(config=self.tasks_config["generate_plan"])
-
-
-    @agent
-    def decomposer(self) -> Agent:
-        """
-        Agent that takes the high-level plan and generates the final SQL query,
-        decomposing complex tasks into atomic, executable SQL components.
-        """
-        return Agent(
-            config=self.agents_config["decomposer"],
-            verbose=True,
-            llm=llm,
-        )
-
-    @task
-    def generate_atomic_sql(self) -> Task:
-        """
-        Task: take the planner's structured plan and produce the final SQL query.
-        """
-        return Task(config=self.tasks_config["generate_atomic_sql"])
-
-
-    # @agent
-    # def verifier(self) -> Agent:
-    #     """
-    #     Agent that validates SQL syntax, checks against schema and detects issues
-    #     before actual execution.
-    #     """
-    #     return Agent(
-    #         config=self.agents_config["verifier"],
-    #         verbose=True,
-    #         llm=llm,
-    #     )
-
-    # @task
-    # def verify_sql(self) -> Task:
-    #     """
-    #     Task: check SQL for errors or missing schema elements BEFORE executing.
-    #     If issues are found, send structured feedback to decomposer.
-    #     """
-    #     return Task(config=self.tasks_config["verify_sql"])
+        return Task(config=self.tasks_config["generate_sql"])
 
     @agent
     def sql_executor_debugger(self) -> Agent:
@@ -162,9 +102,4 @@ class ConversationalText2SQLCrew:
             tasks=self.tasks,  # Automatically created by the @task decorator
             process=Process.sequential,
             verbose=True,
-            # loop = {
-            #     "from": "verify_sql",          # when verifier finishes
-            #     "to": "generate_atomic_sql",   # send feedback to decomposer
-            #     "condition": "feedback_exists" # pseudo, you can implement a lambda
-            # }
         )
