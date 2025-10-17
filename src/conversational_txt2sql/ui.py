@@ -1,11 +1,9 @@
 import os
-
 import pandas as pd
 import streamlit as st
 from pydantic import BaseModel
 
 from conversational_txt2sql.agentic.naive_crew import ConversationalText2SQLCrew
-from conversational_txt2sql.agentic.planner_crew import ConversationalText2SQLPlannerCrew
 from conversational_txt2sql.call_api import get_query_response
 from conversational_txt2sql.prompt import (
     AMBIGUITY_PROMPT,
@@ -33,28 +31,14 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # ---- Sidebar: Clear Button ALWAYS at Top & Conversation History ----
+    # ---- Sidebar: Clear Button & History ----
     with st.sidebar:
-        # Always display the clear button at the top
         if st.button("Clear All / Start New"):
-            for k in [
-                "conversation_history",
-                "clarity_status",
-                "clarification_pending",
-                "ambiguity_llm_response",
-                "final_question",
-                "result_df",
-                "result_ready",
-                "show_unrelated_error",
-            ]:
-                st.session_state.pop(k, None)
+            for k in st.session_state.keys():
+                del st.session_state[k]
             st.rerun()
-
         st.markdown("### Conversation History")
-        if (
-            "conversation_history" in st.session_state
-            and st.session_state["conversation_history"]
-        ):
+        if "conversation_history" in st.session_state and st.session_state["conversation_history"]:
             for i, q in enumerate(st.session_state["conversation_history"], 1):
                 st.markdown(f"**{i}.** {q}")
         else:
@@ -71,6 +55,8 @@ def main():
         st.session_state["clarification_pending"] = False
     if "final_question" not in st.session_state:
         st.session_state["final_question"] = ""
+    if "turns" not in st.session_state:
+        st.session_state["turns"] = []  # List of {"question": str, "result_df": pd.DataFrame}
     if "result_ready" not in st.session_state:
         st.session_state["result_ready"] = False
     if "result_df" not in st.session_state:
@@ -78,9 +64,28 @@ def main():
     if "show_unrelated_error" not in st.session_state:
         st.session_state["show_unrelated_error"] = False
 
-    # ---- Main Input Form ----
+    # ---- Display all previous turns ----
+    st.markdown("### 💬 Previous Questions & Results")
+    if st.session_state["turns"]:
+        for i, turn in enumerate(st.session_state["turns"]):
+            with st.container():
+                st.markdown(f"**Q{i+1}:** {turn['question']}")
+                st.dataframe(turn["result_df"])
+                csv = turn["result_df"].to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label=f"⬇️ Download results for Q{i+1}",
+                    data=csv,
+                    file_name=f"query_results_{i+1}.csv",
+                    mime="text/csv",
+                    key=f"download_{i}"
+                )
+            st.markdown("---")
+    else:
+        st.info("No results yet.")
+
+    default_question = "Show me the performance trend for AADR. For each year, calculate its outperformance, the prior year's number, and the change."
+    # ---- Main Input Form for new / follow-up question ----
     with st.form("question_form"):
-        default_question = "Show me the performance trend for AADR. For each year, calculate its outperformance, the prior year's number, and the change."
         question = st.text_area(
             "Enter your question:",
             value=st.session_state["final_question"] or default_question,
@@ -110,15 +115,21 @@ def main():
             if ambiguity_llm_response
             else "Clarifying question needed."
         )
-        clarification = st.text_input(clarifying_q)
-        if st.button("Submit Clarification"):
+
+        col1, col2 = st.columns([2, 1])  # two buttons side by side
+        with col1:
+            clarification = st.text_input(clarifying_q)
+            submit_clarification = st.button("Submit Clarification")
+        with col2:
+            skip_clarification = st.button("No patience anymore, show results / bye!")
+
+        if submit_clarification:
             if not clarification.strip():
                 st.error("Please provide a clarification.")
             else:
                 st.session_state["conversation_history"].append(
                     f"Clarification: {clarification}"
                 )
-                # Update question with clarification (summarize if desired)
                 question_and_clarification = (
                     st.session_state["final_question"] + "\n" + clarification
                 )
@@ -147,9 +158,17 @@ def main():
                     st.session_state["final_question"] = question_and_clarification
                 st.rerun()
 
+        elif skip_clarification:
+            # User chooses to bypass clarification → treat as clear
+            st.session_state["clarity_status"] = "clear"
+            st.session_state["clarification_pending"] = False
+            st.session_state["final_question"] = st.session_state["final_question"]
+            st.session_state["conversation_history"].append(
+                f"Skipped clarification. Using question as-is."
+            )
+            st.rerun()
     # ---- Initial Submission and Ambiguity Checking ----
     elif submit and question.strip():
-        # Only allow new question submission if not in the clarification loop
         st.session_state["conversation_history"].append(f"Question: {question.strip()}")
         ambiguity_prompt = generate_prompt(
             DATASET_PATH, question.strip(), db, AMBIGUITY_PROMPT
@@ -185,59 +204,28 @@ def main():
         db_schema_inputs["user_question"] = st.session_state["final_question"]
         with st.spinner("Running Text2SQL agent and collecting results..."):
             response = (
-                ConversationalText2SQLPlannerCrew().crew().kickoff(inputs=db_schema_inputs)
+                ConversationalText2SQLCrew().crew().kickoff(inputs=db_schema_inputs)
             )
-        # Expect DataFrameOutputModel-like output, convert to DataFrame:
         df = None
         if hasattr(response, "pydantic") and hasattr(response.pydantic, "df_output"):
             try:
                 df = pd.DataFrame(response.pydantic.df_output)
             except Exception as ex:
                 st.error(f"Result conversion failed: {ex}")
-        st.session_state["result_df"] = df
-        st.session_state["result_ready"] = df is not None and not df.empty
-        # st.rerun()
 
-    # ---- Display output if available ----
-    if st.session_state.get("result_ready"):
-        st.subheader("Results table:")
-        st.dataframe(st.session_state["result_df"])
-        csv = st.session_state["result_df"].to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Download as CSV",
-            data=csv,
-            file_name="query_results.csv",
-            mime="text/csv",
-        )
-    elif (
-        st.session_state.get("result_ready") is False
-        and st.session_state.get("clarity_status") == "clear"
-    ):
-        st.info("No SQL output was returned.")
+        # ---- Append new turn instead of overwriting previous results ----
+        st.session_state["turns"].append({
+            "question": st.session_state["final_question"],
+            "result_df": df
+        })
 
-    # ✅ --- FOLLOW-UP QUESTION SECTION ---
-    st.markdown("---")
-    st.subheader("🔁 Ask a follow-up question")
-
-    with st.form("followup_form", clear_on_submit=True):
-        followup_q = st.text_area(
-            "Do you have another question?",
-            placeholder="e.g. Show the top 5 ETFs by performance this year",
-            height=100,
-        )
-        followup_submit = st.form_submit_button("Submit Follow-up")
-
-    if followup_submit and followup_q.strip():
-        # Treat follow-up just like a new question
-        st.session_state["conversation_history"].append(f"Follow-up: {followup_q}")
-        st.session_state["final_question"] = followup_q.strip()
+        # ---- Reset for next question ----
+        st.session_state["final_question"] = ""
         st.session_state["clarity_status"] = None
         st.session_state["clarification_pending"] = False
         st.session_state["ambiguity_llm_response"] = None
-        st.session_state["result_ready"] = False
-        st.session_state["result_df"] = None
+        st.session_state["result_ready"] = df is not None and not df.empty
         st.rerun()
-    # ---- End ----
 
 
 if __name__ == "__main__":
