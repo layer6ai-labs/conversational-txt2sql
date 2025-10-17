@@ -73,28 +73,3 @@ execute_debug_sql:
     - If no fix is possible: a concise summary of failure, and (optionally) a referral back to the sql_generator agent.
   agent: sql_executor_debugger
   context: [generate_sql]
-
-# generate_plan:
-#   description: >
-#     Analyze the user question and produce a clear, numbered plan of steps needed to answer it using SQL.
-#   expected_output: >
-#     A structured list of steps, each describing part of the SQL strategy.
-#   agent: planner
-
-# generate_atomic_sql:
-#   description: >
-#     Take the plan produced by the planner and translate it into a complete SQL query. 
-#     Decompose complex requirements into simple SQL building blocks before composing.
-#   expected_output: >
-#     A single SQL query wrapped in <SQL> tags.
-#   agent: decomposer
-#   context: [generate_plan]
-
-# verify_sql:
-#   description: >
-#     Check the generated SQL for syntax errors, schema mismatches, or missing elements before execution.
-#     If issues exist, return structured feedback.
-#   expected_output: >
-#     Either "Verified OK" or detailed error feedback that can be looped back to the decomposer.
-#   agent: verifier
-#   context: [generate_atomic_sql]
