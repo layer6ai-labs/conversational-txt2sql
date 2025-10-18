@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from conversational_txt2sql.agentic.crew import ConversationalText2SQLCrew
+from conversational_txt2sql.agentic.naive_crew import ConversationalText2SQLCrew
 from conversational_txt2sql.call_api import get_query_response
 from conversational_txt2sql.prompt import (
     AMBIGUITY_PROMPT,
