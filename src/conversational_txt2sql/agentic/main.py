@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from conversational_txt2sql.agentic.planner_crew import ConversationalText2SQLCrew
+from conversational_txt2sql.agentic.naive_crew import ConversationalText2SQLCrew
 from conversational_txt2sql.prompt import get_db_schema_and_metadata
 
 
